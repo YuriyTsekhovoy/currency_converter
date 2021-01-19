@@ -1,6 +1,8 @@
 from __future__ import print_function
 
-import os, json, argparse
+import os
+import json
+import argparse
 from pprint import pformat
 from twisted.internet.task import react
 from twisted.web.client import Agent, readBody
@@ -28,7 +30,7 @@ parser.add_argument('-a', '--all', action='store_true',
 parser.add_argument('-c', '--convert', nargs=3, action=ConvertAction,
                     metavar=('BASE', 'TO', 'AMOUNT'),
                     help="""
-                    sonverts the base currency amount to the currency you would
+                    converts the base currency amount to the currency you would
                      like to convert and shows the amount. Takes three 
                      additional arguments: 'BASE', 'TO', 'AMOUNT'
                      """)
@@ -45,12 +47,12 @@ if args.convert:
     url = 'https://api.currencyscoop.com/v1/convert?api_key={}&base={}&to={}&amount={}'.format(
         api_key, base, to, amount)
 
-    def cbRequest(response):
-        d = readBody(response)
-        d.addCallback(cbBody)
-        return d
+    def callback_request(response):
+        agent_reactor = readBody(response)
+        agent_reactor.addCallback(callback_body)
+        return agent_reactor
 
-    def cbBody(body):
+    def callback_body(body):
         data = json.loads(body)
         curr_from = data['response']['from']
         curr_to = data['response']['to']
@@ -63,12 +65,12 @@ if args.convert:
 
     def main(reactor, url=url):
         agent = Agent(reactor)
-        d = agent.request(
+        agent_reactor = agent.request(
             b'GET', url,
             Headers({'User-Agent': ['Twisted Web Client Example']}),
             None)
-        d.addCallback(cbRequest)
-        return d
+        agent_reactor.addCallback(callback_request)
+        return agent_reactor
 
     react(main)
 
@@ -77,12 +79,12 @@ if args.all:
     url = 'https://api.currencyscoop.com/v1/currencies?api_key={}'.format(
         api_key)
 
-    def cbRequest(response):
-        d = readBody(response)
-        d.addCallback(cbBody)
-        return d
+    def callback_request(response):
+        agent_reactor = readBody(response)
+        agent_reactor.addCallback(callback_body)
+        return agent_reactor
 
-    def cbBody(body):
+    def callback_body(body):
         data = json.loads(body)
         curr_fiats = data['response']['fiats']
         for key, value in curr_fiats.items():
@@ -92,11 +94,11 @@ if args.all:
 
     def main(reactor, url=url):
         agent = Agent(reactor)
-        d = agent.request(
+        agent_reactor = agent.request(
             b'GET', url,
             Headers({'User-Agent': ['Twisted Web Client Example']}),
             None)
-        d.addCallback(cbRequest)
-        return d
+        agent_reactor.addCallback(callback_request)
+        return agent_reactor
 
     react(main)
